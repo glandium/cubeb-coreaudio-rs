@@ -388,18 +388,6 @@ fn test_set_device_info_to_nonexistent_output_device() {
     let _device = create_device_info(nonexistent_id, DeviceType::OUTPUT);
 }
 
-// reinit_stream
-// ------------------------------------
-// TODO
-
-// reinit_stream_async
-// ------------------------------------
-// TODO
-
-// event_addr_to_string
-// ------------------------------------
-// TODO
-
 // property_listener_callback
 // ------------------------------------
 // TODO
@@ -1298,30 +1286,6 @@ fn test_set_buffer_size_sync_by_scope_with_null_unit(scope: Scope) {
     assert!(set_buffer_size_sync(unit, scope.into(), 2048).is_err());
 }
 
-// setup_stream
-// ------------------------------------
-// TODO
-
-// stream_destroy_internal
-// ------------------------------------
-// TODO
-
-// stream_destroy
-// ------------------------------------
-// TODO
-
-// stream_start_internal
-// ------------------------------------
-// TODO
-
-// stream_start
-// ------------------------------------
-// TODO
-
-// stream_stop_internal
-// ------------------------------------
-// TODO
-
 // get_volume, set_volume
 // ------------------------------------
 #[test]
@@ -1366,10 +1330,6 @@ fn test_get_default_device_name() {
         }
     }
 }
-
-// strref_to_cstr_utf8
-// ------------------------------------
-// TODO
 
 // get_channel_count
 // ------------------------------------
