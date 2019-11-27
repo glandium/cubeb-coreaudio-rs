@@ -3149,6 +3149,8 @@ struct AudioUnitStream<'ctx> {
     context: &'ctx mut AudioUnitContext,
     user_ptr: *mut c_void,
 
+    serial_queue: dispatch_queue_t,
+
     data_callback: ffi::cubeb_data_callback,
     state_callback: ffi::cubeb_state_callback,
     device_changed_callback: Mutex<ffi::cubeb_device_changed_callback>,
@@ -3184,6 +3186,7 @@ impl<'ctx> AudioUnitStream<'ctx> {
         AudioUnitStream {
             context,
             user_ptr,
+            serial_queue: create_dispatch_queue(DISPATCH_QUEUE_LABEL, DISPATCH_QUEUE_SERIAL),
             data_callback,
             state_callback,
             device_changed_callback: Mutex::new(None),
@@ -3343,7 +3346,7 @@ impl<'ctx> AudioUnitStream<'ctx> {
             return;
         }
 
-        let queue = self.context.serial_queue;
+        let queue = self.serial_queue;
         let mutexed_stm = Arc::new(Mutex::new(self));
         let also_mutexed_stm = Arc::clone(&mutexed_stm);
         // Use a new thread, through the queue, to avoid deadlock when calling
@@ -3381,7 +3384,7 @@ impl<'ctx> AudioUnitStream<'ctx> {
     fn destroy(&mut self) {
         *self.destroy_pending.get_mut() = true;
 
-        let queue = self.context.serial_queue;
+        let queue = self.serial_queue;
 
         let stream_ptr = self as *const AudioUnitStream;
         // Execute close in serial queue to avoid collision
@@ -3406,6 +3409,7 @@ impl<'ctx> AudioUnitStream<'ctx> {
 impl<'ctx> Drop for AudioUnitStream<'ctx> {
     fn drop(&mut self) {
         self.destroy();
+        release_dispatch_queue(self.serial_queue);
     }
 }
 
@@ -3415,7 +3419,7 @@ impl<'ctx> StreamOps for AudioUnitStream<'ctx> {
         *self.draining.get_mut() = false;
 
         // Execute start in serial queue to avoid racing with destroy or reinit.
-        let queue = self.context.serial_queue;
+        let queue = self.serial_queue;
         let mut result = Err(Error::error());
         let started = &mut result;
         let stream = &self;
@@ -3439,7 +3443,7 @@ impl<'ctx> StreamOps for AudioUnitStream<'ctx> {
         *self.shutdown.get_mut() = true;
 
         // Execute stop in serial queue to avoid racing with destroy or reinit.
-        let queue = self.context.serial_queue;
+        let queue = self.serial_queue;
         let stream = &self;
         sync_dispatch(queue, move || {
             stream.core_stream_data.stop_audiounits();
